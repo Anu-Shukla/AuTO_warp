@@ -26,7 +26,7 @@ def simp_kernel(rho: wp.array[wp.float32],
  
 def simp(rho, Emin, Emax, penal):
     E = wp.zeros(rho.shape[0], dtype=wp.float32, device=rho.device, requires_grad=True)
-    wp.launch(kernel=simp_kernel, dim=rho.shape[0], inputs=[rho, E, Emin, Emax, penal])
+    wp.launch(kernel=simp_kernel, dim=rho.shape[0], inputs=[rho, E, Emin, Emax, penal], device="cuda")
 
     return E
 
@@ -43,6 +43,6 @@ def ramp_kernel(rho: wp.array[wp.float32],
     
 def ramp(rho, Emax, S): 
     E = wp.zeros(rho.shape[0], dtype=wp.float32, device=rho.device, requires_grad=True)
-    wp.launch(kernel = ramp_kernel, dim=rho.shape[0], inputs=[rho, E, Emax, S])
+    wp.launch(kernel = ramp_kernel, dim=rho.shape[0], inputs=[rho, E, Emax, S], device="cuda")
 
     return E
