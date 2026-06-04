@@ -15,3 +15,30 @@
 #
 # Implemented as a Warp kernel — runs on GPU and participates in the
 # autodiff tape so gradients flow back through assembly to E (and then rho).
+
+import warp as wp
+
+@wp.kernel
+def assembleK_kernel(KE_flat: wp.array[wp.float32],
+                     E: wp.array[wp.float32],
+                     iK: wp.array[wp.int32],
+                     jK: wp.array[wp.int32],
+                     K: wp.array2d[wp.float32],
+                     n_dof_per_elem: int):
+    e = wp.tid()
+    for n in range(n_dof_per_elem):
+        val = KE_flat[n] * E[e]
+        wp.atomic_add(K, iK[e * n_dof_per_elem + n], jK[e * n_dof_per_elem + n], val)
+
+
+def assembleK(KE_flat, E, iK, jK, ndof):
+    K = wp.zeros((ndof, ndof), dtype=wp.float32, device=E.device, requires_grad=True)
+    KE_flat_wp = wp.array(KE_flat, dtype=wp.float32, device=E.device)
+    iK_wp = wp.array(iK, dtype=wp.int32, device=E.device)
+    jK_wp = wp.array(jK, dtype=wp.int32, device=E.device)
+
+    wp.launch(kernel=assembleK_kernel, dim=E.shape[0], inputs = [KE_flat_wp, E, iK_wp, jK_wp, K, KE_flat.shape[0]], device="cuda")
+
+    return K
+
+
