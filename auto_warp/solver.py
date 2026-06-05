@@ -20,3 +20,17 @@
 #
 # Gradients flow back through the solve via the adjoint:
 #   given dJ/du, we need dJ/dK — which requires solving K * lambda = dJ/du.
+
+import warp as wp
+import numpy as np
+import scipy.linalg 
+
+def solveKuf(K, f, freeDofs, ndof):
+    K_np = K.numpy()
+    K_free = K_np[freeDofs, :][:, freeDofs]
+    f_free = f[freeDofs]
+    u_free = scipy.linalg.solve(K_free, f_free)
+    u_np = np.zeros(ndof)
+    u_np[freeDofs] = u_free
+    return wp.array(u_np, dtype=wp.float64, device="cuda")
+
